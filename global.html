@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vista Global — Portal Investimento</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#F7F6F2;--surface:#FFFFFF;--surface2:#F0EEE8;
+  --border:#E2DED4;--border2:#CBC6BA;
+  --text:#1A1916;--text2:#6B6860;--text3:#9C9A94;
+  --up:#0F6E56;--up-bg:#E1F5EE;
+  --dn:#A32D2D;--dn-bg:#FCEBEB;
+  --warn:#BA7517;--warn-bg:#FAEEDA;
+  --info:#185FA5;--info-bg:#E6F1FB;
+  --radius:6px;--radius-lg:12px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh}
+nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center;height:50px;gap:20px;position:sticky;top:0;z-index:100}
+.nav-logo{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;display:flex;align-items:center;gap:7px;flex-shrink:0}
+.nav-dot{width:7px;height:7px;background:var(--text);border-radius:50%}
+.nav-tabs{display:flex;gap:2px;flex:1}
+.ntab{padding:5px 13px;font-size:12px;font-weight:500;border:none;background:transparent;color:var(--text2);cursor:pointer;border-radius:var(--radius);transition:all .15s}
+.ntab:hover{background:var(--surface2);color:var(--text)}
+.ntab.active{background:var(--text);color:#fff}
+.live{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3);flex-shrink:0}
+.ldot{width:6px;height:6px;border-radius:50%;background:#0F6E56;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.wrap{padding:16px 20px}
+.sec{margin-bottom:14px}
+.sec-lbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.err{background:var(--warn-bg);color:var(--warn);font-size:11px;padding:7px 12px;border-radius:var(--radius);margin-bottom:12px;display:none}
+.err.show{display:block}
+.divider{height:1px;background:var(--border);margin:14px 0}
+
+/* HEATMAP */
+.hgrid{display:grid;gap:4px}
+.g5{grid-template-columns:repeat(5,1fr)}
+.g6{grid-template-columns:repeat(6,1fr)}
+.g7{grid-template-columns:repeat(7,1fr)}
+.cell{border-radius:var(--radius);padding:9px 11px;cursor:pointer;transition:opacity .12s;position:relative;user-select:none}
+.cell:hover{opacity:.82}
+.cell.selected{outline:2px solid rgba(255,255,255,.8);outline-offset:-2px}
+.cell-tag{position:absolute;top:5px;right:6px;font-size:8px;font-weight:500;padding:1px 4px;border-radius:3px;background:rgba(0,0,0,.2)}
+.cell-name{font-size:10px;font-weight:500;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:22px}
+.cell-val{font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
+.cell-sub{font-size:9px;margin-top:2px;opacity:.85;font-variant-numeric:tabular-nums}
+.cell-sig{position:absolute;bottom:5px;right:5px;font-size:8px;font-weight:600;padding:1px 4px;border-radius:3px}
+
+/* RISK CARDS */
+.risk-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+.risk-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:10px 12px}
+.risk-lbl{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);margin-bottom:4px}
+.risk-val{font-size:17px;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums}
+.risk-status{font-size:10px;font-weight:500;margin-top:2px}
+.risk-bar-w{height:4px;background:var(--border);border-radius:99px;margin-top:7px;overflow:hidden}
+.risk-bar{height:100%;border-radius:99px;transition:width .5s}
+
+/* CHART PANEL */
+.chart-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:12px;display:none}
+.chart-panel.open{display:block}
+.chart-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface2);border-bottom:1px solid var(--border)}
+.chart-name{font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:10px}
+.chart-meta{font-size:11px;color:var(--text2)}
+.chart-close{background:none;border:none;cursor:pointer;color:var(--text3);font-size:20px;line-height:1}
+.res-tabs{display:flex;gap:3px}
+.res-btn{padding:4px 9px;font-size:11px;font-weight:500;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;border-radius:var(--radius);transition:all .12s}
+.res-btn.on{background:var(--text);color:#fff;border-color:var(--text)}
+.chart-signal{padding:6px 14px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:16px;font-size:11px}
+.sig-badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:99px}
+.sig-buy{background:var(--up-bg);color:var(--up)}
+.sig-sell{background:var(--dn-bg);color:var(--dn)}
+.sig-neutral{background:var(--surface2);color:var(--text2);border:1px solid var(--border2)}
+#candle-wrap{position:relative;height:320px;padding:8px}
+
+/* MACRO */
+.macro-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.mc{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px 14px}
+.mc-region{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:7px}
+.mc-row{display:flex;justify-content:space-between;align-items:baseline;padding:4px 0;border-bottom:1px solid var(--border);font-size:11px}
+.mc-row:last-child{border:none}
+.mc-k{color:var(--text2)}
+.mc-v{font-weight:600;color:var(--text)}
+.mc-note{font-size:9px;color:var(--text3);margin-left:3px}
+
+/* CALENDAR */
+.cal-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+.cal-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:8px 10px;display:flex;gap:10px;align-items:flex-start}
+.cal-impact{width:4px;border-radius:99px;flex-shrink:0;align-self:stretch;min-height:24px}
+.cal-high{background:var(--dn)}
+.cal-medium{background:var(--warn)}
+.cal-low{background:var(--text3)}
+.cal-event{font-size:11px;font-weight:500;color:var(--text)}
+.cal-country{font-size:10px;color:var(--text3)}
+.cal-time{font-size:10px;color:var(--text2);margin-top:2px}
+.cal-vals{display:flex;gap:8px;margin-top:3px;font-size:10px}
+.cal-act{color:var(--up);font-weight:600}
+.cal-est{color:var(--text2)}
+.cal-prev{color:var(--text3)}
+
+/* NEWS */
+.news-list{display:flex;flex-direction:column;gap:6px}
+.news-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:9px 11px}
+.news-src{font-size:10px;color:var(--text3);margin-bottom:2px}
+.news-ttl{font-size:12px;font-weight:500;color:var(--text);line-height:1.4}
+.news-ttl a{color:inherit;text-decoration:none}
+.news-ttl a:hover{color:var(--info)}
+
+/* ALERTS */
+.alerts{display:flex;flex-direction:column;gap:5px}
+.al{display:flex;align-items:flex-start;gap:9px;padding:8px 11px;border-radius:var(--radius)}
+.al-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.al-t{font-size:12px;font-weight:600;color:var(--text)}
+.al-s{font-size:11px;color:var(--text2);margin-top:1px;line-height:1.4}
+
+/* YIELD CURVE */
+.yield-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px 14px}
+.yield-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);margin-bottom:8px}
+.yield-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px}
+.yield-row:last-child{border:none}
+.yield-name{color:var(--text2)}
+.yield-val{font-weight:600;font-variant-numeric:tabular-nums}
+
+@media(max-width:900px){
+  .g5,.g6,.g7{grid-template-columns:repeat(3,1fr)}
+  .risk-grid{grid-template-columns:repeat(3,1fr)}
+  .macro-grid,.cal-grid{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+<nav>
+  <div class="nav-logo"><div class="nav-dot"></div>Portal Investimento</div>
+  <div class="nav-tabs">
+    <button class="ntab" onclick="location.href='index.html'">Dashboard</button>
+    <button class="ntab active">Global</button>
+    <button class="ntab" onclick="location.href='index.html'">Operações</button>
+  </div>
+  <div class="live"><div class="ldot"></div><span id="upd-ts">a carregar...</span></div>
+</nav>
+
+<div class="wrap">
+  <div class="err" id="err">⚠️ Dados em tempo real indisponíveis. A mostrar valores de referência.</div>
+
+  <!-- CHART PANEL — abre ao clicar numa célula -->
+  <div class="chart-panel" id="chart-panel">
+    <div class="chart-hdr">
+      <div class="chart-name">
+        <span id="chart-title">—</span>
+        <span class="chart-meta" id="chart-meta"></span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="res-tabs" id="res-tabs">
+          <button class="res-btn" onclick="changeRes('60')">1H</button>
+          <button class="res-btn on" onclick="changeRes('D')">1D</button>
+          <button class="res-btn" onclick="changeRes('W')">1W</button>
+          <button class="res-btn" onclick="changeRes('M')">1M</button>
+        </div>
+        <button class="chart-close" onclick="closeChart()">×</button>
+      </div>
+    </div>
+    <div class="chart-signal" id="chart-signal" style="display:none">
+      <span style="color:var(--text3);font-size:10px">SINAL TÉCNICO (D):</span>
+      <span class="sig-badge" id="sig-badge">—</span>
+      <span id="sig-counts" style="color:var(--text2)"></span>
+    </div>
+    <div id="candle-wrap">
+      <canvas id="candle-chart" role="img" aria-label="Gráfico de candlestick do ativo seleccionado"></canvas>
+    </div>
+  </div>
+
+  <!-- 1. ÍNDICES -->
+  <div class="sec">
+    <div class="sec-lbl">📊 1 · Índices bolsistas globais</div>
+    <div class="hgrid g5" id="g-indices"></div>
+  </div>
+
+  <!-- 2. FX -->
+  <div class="sec">
+    <div class="sec-lbl">💵 2 · Divisas & Dólar</div>
+    <div class="hgrid g6" id="g-fx"></div>
+  </div>
+
+  <!-- 3. TAXAS / YIELDS -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+    <div class="sec">
+      <div class="sec-lbl">🏦 3 · Yields & Taxas de juro</div>
+      <div class="hgrid g7" id="g-rates"></div>
+    </div>
+    <div>
+      <div class="sec-lbl" style="margin-bottom:8px">📈 Curva Treasury (real)</div>
+      <div class="yield-card" id="yield-curve-card">
+        <div class="yield-title">US Treasury Yield Curve</div>
+        <div id="yield-curve-data" style="color:var(--text3);font-size:11px">a carregar...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. COMMODITIES -->
+  <div class="sec">
+    <div class="sec-lbl">🛢️ 4 · Commodities estratégicas</div>
+    <div class="hgrid g6" id="g-comm"></div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- 5. RISCO -->
+  <div class="sec">
+    <div class="sec-lbl">⚡ 5 · Risco & Volatilidade</div>
+    <div class="risk-grid" id="g-risk"></div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- 6. MACRO -->
+  <div class="sec">
+    <div class="sec-lbl">🏭 6 · Indicadores macroeconómicos</div>
+    <div class="macro-grid" id="g-macro"></div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- 7. CALENDÁRIO + NOTÍCIAS + ALERTAS -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+    <div>
+      <div class="sec-lbl">📅 Calendário económico · próximos 7 dias</div>
+      <div class="cal-grid" id="g-calendar"></div>
+    </div>
+    <div>
+      <div class="sec-lbl">📰 Notícias de mercado</div>
+      <div class="news-list" id="g-news"></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-lbl">⚠️ 7 · Sinais de alerta & sentimento</div>
+    <div class="alerts" id="g-alerts"></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════
+// CONFIG — tickers correctos verificados via documentação
+// ═══════════════════════════════════════════════════════
+const API = 'https://portal-invest.gustbuen.workers.dev';
+
+// Índices via OANDA (valores reais do índice, não ETFs)
+const INDICES = [
+  { n:'S&P 500',    sym:'OANDA:SPX500USD', tag:'US', tv:'OANDA:SPX500USD' },
+  { n:'Nasdaq 100', sym:'OANDA:NAS100USD', tag:'US', tv:'OANDA:NAS100USD' },
+  { n:'Dow Jones',  sym:'OANDA:US30USD',   tag:'US', tv:'OANDA:US30USD'   },
+  { n:'Euro Stoxx', sym:'OANDA:EU50EUR',   tag:'EU', tv:'OANDA:EU50EUR'   },
+  { n:'DAX 40',     sym:'OANDA:DE30EUR',   tag:'DE', tv:'OANDA:DE30EUR'   },
+  { n:'FTSE 100',   sym:'OANDA:UK100GBP',  tag:'UK', tv:'OANDA:UK100GBP'  },
+  { n:'Nikkei 225', sym:'OANDA:JP225USD',  tag:'JP', tv:'OANDA:JP225USD'  },
+  { n:'Hang Seng',  sym:'OANDA:HK33HKD',  tag:'HK', tv:'OANDA:HK33HKD'   },
+  { n:'Ibovespa',   sym:'PEPPERSTONE:IBOVESPA', tag:'BR', tv:'PEPPERSTONE:IBOVESPA' },
+  { n:'CSI 300',    sym:'000300.SS',        tag:'CN', tv:'SSE:000300'      },
+];
+
+// FX — via OANDA
+const FX = [
+  { n:'DXY',     sym:'PEPPERSTONE:DXY',   tag:'USD', tv:'TVC:DXY'     },
+  { n:'EUR/USD', sym:'OANDA:EUR_USD',      tag:'FX',  tv:'FX:EURUSD'   },
+  { n:'USD/JPY', sym:'OANDA:USD_JPY',      tag:'FX',  tv:'FX:USDJPY'   },
+  { n:'GBP/USD', sym:'OANDA:GBP_USD',      tag:'FX',  tv:'FX:GBPUSD'   },
+  { n:'USD/CNY', sym:'OANDA:USD_CNY',      tag:'FX',  tv:'FX:USDCNY'   },
+  { n:'USD/BRL', sym:'OANDA:USD_BRL',      tag:'EM',  tv:'FX:USDBRL'   },
+];
+
+// Yields / Taxas — via OANDA (bonds) + estático para taxas banco central
+const RATES = [
+  { n:'Fed Funds',    sym:null,               tag:'US', fixed:true, val:'3,50%', dir:'nt' },
+  { n:'Treasury 2Y',  sym:'OANDA:USB02YUSD',  tag:'US', tv:'CBOT:ZT1!'  },
+  { n:'Treasury 10Y', sym:'OANDA:USB10YUSD',  tag:'US', tv:'CBOT:ZN1!'  },
+  { n:'Treasury 30Y', sym:'OANDA:USB30YUSD',  tag:'US', tv:'CBOT:ZB1!'  },
+  { n:'Gilts 10Y',    sym:'OANDA:UK10YBGBP',  tag:'UK', tv:'TVC:GB10Y'  },
+  { n:'Taxa BCE',     sym:null,               tag:'EU', fixed:true, val:'2,25%', dir:'nt' },
+  { n:'Bund 10Y',     sym:'PEPPERSTONE:BUND', tag:'DE', tv:'EUREX:FBUND1!' },
+];
+
+// Commodities — via OANDA + Pepperstone
+const COMM = [
+  { n:'Ouro',        sym:'OANDA:XAU_USD',      tag:'XAU', tv:'TVC:GOLD'        },
+  { n:'Prata',       sym:'OANDA:XAG_USD',       tag:'XAG', tv:'TVC:SILVER'      },
+  { n:'WTI',         sym:'OANDA:WTICO_USD',     tag:'OIL', tv:'TVC:USOIL'       },
+  { n:'Brent',       sym:'PEPPERSTONE:BRENT',   tag:'OIL', tv:'TVC:UKOIL'       },
+  { n:'Cobre',       sym:'OANDA:XCU_USD',       tag:'HG',  tv:'COMEX:HG1!'      },
+  { n:'Gás Natural', sym:'OANDA:NATGAS_USD',    tag:'NG',  tv:'NYMEX:NG1!'      },
+];
+
+// VIX via Pepperstone
+const RISK_SYMS = {
+  vix:  'PEPPERSTONE:VIX',
+  hyg:  'HYG',
+  tlt:  'TLT',
+};
+
+// Dados macro estáticos (actualizados mensalmente por ti)
+const MACRO = [
+  { region:'🇺🇸 EUA', rows:[
+    { k:'CPI', v:'3,1%', n:'Mai 26' },
+    { k:'PCE Core', v:'2,7%', n:'Abr 26' },
+    { k:'Desemprego', v:'4,1%', n:'Mai 26' },
+    { k:'PMI Comp.', v:'52,1', n:'Mai 26' },
+    { k:'PIB YoY', v:'+2,1%', n:'Q1 26' },
+  ]},
+  { region:'🇪🇺 Europa', rows:[
+    { k:'HICP', v:'2,3%', n:'Mai 26' },
+    { k:'Core Inf.', v:'2,8%', n:'Mai 26' },
+    { k:'Desemprego', v:'6,2%', n:'Abr 26' },
+    { k:'PMI Comp.', v:'49,4', n:'Mai 26' },
+    { k:'PIB YoY', v:'+0,9%', n:'Q1 26' },
+  ]},
+  { region:'🇨🇳 China', rows:[
+    { k:'CPI', v:'0,4%', n:'Mai 26' },
+    { k:'PPI', v:'-2,1%', n:'Mai 26' },
+    { k:'PMI Oficial', v:'50,4', n:'Mai 26' },
+    { k:'PIB YoY', v:'+4,8%', n:'Q1 26' },
+    { k:'Prod. Ind.', v:'+6,1%', n:'Abr 26' },
+  ]},
+  { region:'🇧🇷 Brasil', rows:[
+    { k:'IPCA', v:'4,2%', n:'Mai 26' },
+    { k:'SELIC', v:'10,50%', n:'Jun 26' },
+    { k:'Desemprego', v:'7,8%', n:'Abr 26' },
+    { k:'PMI Ind.', v:'52,1', n:'Mai 26' },
+    { k:'PIB YoY', v:'+2,3%', n:'Q1 26' },
+  ]},
+];
+
+const ALERTS_DATA = [
+  { t:'red',   title:'Carry Trade JPY em risco',           sub:'USD/JPY em zona crítica. BOJ reunião Jul 26. Reversão como Ago 2024 possível.' },
+  { t:'red',   title:'Yield Curve invertida (2Y > 10Y)',   sub:'Sinal histórico de recessão. Desinversão recente pode sinalizar ciclo baixista.' },
+  { t:'amber', title:'DXY em resistência 105',             sub:'Dólar forte pesa em emergentes e commodities. Fed hawkish limita cortes.' },
+  { t:'amber', title:'Cobre sinaliza desaceleração China', sub:'Abaixo de $4.50 = queda procura industrial. Impacto em VALE3, BRL, AUD.' },
+  { t:'green', title:'Ouro com suporte estrutural',        sub:'Bancos centrais (China, Índia, Turquia) compradores líquidos. Tese intacta.' },
+];
+
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+let live = {};
+let currentChartSym = null;
+let currentRes = 'D';
+let candleChart = null;
+
+// ═══════════════════════════════════════════════════════
+// FETCH — todos os dados
+// ═══════════════════════════════════════════════════════
+async function fetchAll() {
+  // Todos os símbolos que precisam de candle
+  const allSyms = [
+    ...INDICES.filter(d => d.sym).map(d => d.sym),
+    ...FX.filter(d => d.sym).map(d => d.sym),
+    ...RATES.filter(d => d.sym).map(d => d.sym),
+    ...COMM.filter(d => d.sym).map(d => d.sym),
+    RISK_SYMS.vix,
+  ];
+
+  try {
+    const res = await fetch(`${API}?action=quotes&symbols=${allSyms.join(',')}`);
+    if (!res.ok) throw new Error(res.status);
+    live = await res.json();
+    document.getElementById('err').classList.remove('show');
+    const now = new Date();
+    document.getElementById('upd-ts').textContent =
+      'atualizado ' + now.toLocaleTimeString('pt-PT', { hour:'2-digit', minute:'2-digit' }) + ' · delay ~20min';
+  } catch(e) {
+    document.getElementById('err').classList.add('show');
+    document.getElementById('upd-ts').textContent = 'offline';
+  }
+
+  render();
+
+  // Dados adicionais em paralelo
+  fetchYieldCurveData();
+  fetchCalendar();
+  fetchNews();
+}
+
+async function fetchYieldCurveData() {
+  try {
+    const res = await fetch(`${API}?action=yield-curve&code=US`);
+    if (!res.ok) return;
+    const d = await res.json();
+    renderYieldCurve(d);
+  } catch(e) {}
+}
+
+async function fetchCalendar() {
+  try {
+    const res = await fetch(`${API}?action=economic-calendar`);
+    if (!res.ok) return;
+    const d = await res.json();
+    renderCalendar(d.events || []);
+  } catch(e) {
+    renderCalendar([]);
+  }
+}
+
+async function fetchNews() {
+  try {
+    const res = await fetch(`${API}?action=news&category=general`);
+    if (!res.ok) return;
+    const d = await res.json();
+    renderNews(d.news || []);
+  } catch(e) {
+    renderNews([]);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════
+function cellColor(v) {
+  if (v >= 1.5)  return { bg:'#0F6E56', tx:'#E1F5EE' };
+  if (v >= 0.5)  return { bg:'#3B6D11', tx:'#EAF3DE' };
+  if (v >= 0)    return { bg:'#639922', tx:'#EAF3DE' };
+  if (v >= -0.5) return { bg:'#BA7517', tx:'#FAEEDA' };
+  if (v >= -1.5) return { bg:'#993C1D', tx:'#FAECE7' };
+  return { bg:'#791F1F', tx:'#FCEBEB' };
+}
+
+function getQ(sym) { return live[sym] || null; }
+
+function buildCell(d) {
+  if (d.fixed) {
+    const c = cellColor(0);
+    return `<div class="cell" style="background:${c.bg}">
+      <div class="cell-tag" style="color:${c.tx}">${d.tag}</div>
+      <div class="cell-name" style="color:${c.tx}">${d.n}</div>
+      <div class="cell-val" style="color:${c.tx}">${d.val}</div>
+    </div>`;
+  }
+
+  const q = d.sym ? getQ(d.sym) : null;
+  let pct = 0, price = '—', sub = '';
+  if (q && q.changePct != null) {
+    pct = parseFloat(q.changePct);
+    price = q.price ? parseFloat(q.price).toLocaleString('pt-PT', { maximumFractionDigits:2 }) : '—';
+    sub = price;
+  }
+  const c = cellColor(pct);
+  const val = q?.changePct != null ? (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%' : '—';
+  const onclick = d.sym ? `openChart('${d.sym}','${d.n}','${d.tv||d.sym}')` : '';
+
+  return `<div class="cell" id="cell-${d.sym?.replace(/[^a-zA-Z0-9]/g,'_')}" style="background:${c.bg}" onclick="${onclick}">
+    <div class="cell-tag" style="color:${c.tx}">${d.tag}</div>
+    <div class="cell-name" style="color:${c.tx}">${d.n}</div>
+    <div class="cell-val" style="color:${c.tx}">${val}</div>
+    <div class="cell-sub" style="color:${c.tx}">${sub}</div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════════
+function render() {
+  document.getElementById('g-indices').innerHTML = INDICES.map(buildCell).join('');
+  document.getElementById('g-fx').innerHTML      = FX.map(buildCell).join('');
+  document.getElementById('g-rates').innerHTML   = RATES.map(buildCell).join('');
+  document.getElementById('g-comm').innerHTML    = COMM.map(buildCell).join('');
+
+  // Risk
+  const vixQ = getQ(RISK_SYMS.vix);
+  const vixVal = vixQ?.price ? parseFloat(vixQ.price) : null;
+  const vixPct = vixVal ? Math.min((vixVal / 50) * 100, 100) : 30;
+  const vixColor = !vixVal ? '#BA7517' : vixVal < 15 ? '#0F6E56' : vixVal < 20 ? '#BA7517' : vixVal < 30 ? '#993C1D' : '#791F1F';
+  const vixStatus = !vixVal ? '...' : vixVal < 15 ? '😌 Calmo' : vixVal < 20 ? '⚖️ Normal' : vixVal < 30 ? '⚠️ Elevado' : '🚨 Pânico';
+
+  const RISK = [
+    { lbl:'VIX · Volatilidade', val: vixVal ? vixVal.toFixed(1) : '—', status: vixStatus, color: vixColor, pct: vixPct },
+    { lbl:'MOVE · Vol. Bonds',  val:'98,4',  status:'✓ Calmo',        color:'#0F6E56', pct:28 },
+    { lbl:'Fear & Greed',       val:'54',    status:'Neutro-Ganância', color:'#BA7517', pct:54 },
+    { lbl:'HYG High Yield',     val:'$79,4', status:'+0,2% spread ok', color:'#0F6E56', pct:65 },
+    { lbl:'Yield Curve 2-10Y',  val:'-58bp', status:'⚠️ Invertida',    color:'#A32D2D', pct:20 },
+    { lbl:'Put/Call Ratio',     val:'0,82',  status:'✓ Normal',        color:'#639922', pct:45 },
+  ];
+  document.getElementById('g-risk').innerHTML = RISK.map(r => `
+    <div class="risk-card">
+      <div class="risk-lbl">${r.lbl}</div>
+      <div class="risk-val" style="color:${r.color}">${r.val}</div>
+      <div class="risk-status" style="color:${r.color}">${r.status}</div>
+      <div class="risk-bar-w"><div class="risk-bar" style="width:${r.pct}%;background:${r.color}"></div></div>
+    </div>`).join('');
+
+  // Macro
+  document.getElementById('g-macro').innerHTML = MACRO.map(m => `
+    <div class="mc">
+      <div class="mc-region">${m.region}</div>
+      ${m.rows.map(r => `
+        <div class="mc-row">
+          <span class="mc-k">${r.k}</span>
+          <span><span class="mc-v">${r.v}</span><span class="mc-note">${r.n}</span></span>
+        </div>`).join('')}
+    </div>`).join('');
+
+  // Alerts
+  
+  const alertDot = { red:'#A32D2D', amber:'#BA7517', green:'#0F6E56' };
+  document.getElementById('g-alerts').innerHTML = ALERTS_DATA.map(a => `
+    <div class="al" style="background:${a.t==='red'?'#FCEBEB':a.t==='amber'?'#FAEEDA':'#E1F5EE'}">
+      <div class="al-dot" style="background:${alertDot[a.t]}"></div>
+      <div><div class="al-t">${a.title}</div><div class="al-s">${a.sub}</div></div>
+    </div>`).join('');
+}
+
+function renderYieldCurve(d) {
+  if (!d?.data?.length) return;
+  const latest = d.data[d.data.length - 1];
+  if (!latest?.v) return;
+  const yields = latest.v;
+  const tenors = ['1M','3M','6M','1Y','2Y','3Y','5Y','7Y','10Y','20Y','30Y'];
+  const html = tenors.map((t, i) => {
+    const val = yields[i];
+    if (val == null) return '';
+    const cls = val < 0 ? 'dn' : 'nt';
+    return `<div class="yield-row">
+      <span class="yield-name">${t}</span>
+      <span class="yield-val ${cls}">${val.toFixed(2)}%</span>
+    </div>`;
+  }).filter(Boolean).join('');
+  document.getElementById('yield-curve-data').innerHTML = html || '<span style="color:var(--text3);font-size:11px">sem dados</span>';
+}
+
+function renderCalendar(events) {
+  const el = document.getElementById('g-calendar');
+  if (!events.length) {
+    el.innerHTML = '<div style="color:var(--text3);font-size:11px;padding:8px">Sem eventos de alto impacto nos próximos 7 dias.</div>';
+    return;
+  }
+  el.innerHTML = events.slice(0, 8).map(e => {
+    const impClass = e.impact === 'high' ? 'cal-high' : e.impact === 'medium' ? 'cal-medium' : 'cal-low';
+    const time = e.time ? new Date(e.time).toLocaleString('pt-PT', { weekday:'short', day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) : '';
+    return `<div class="cal-item">
+      <div class="cal-impact ${impClass}"></div>
+      <div>
+        <div class="cal-event">${e.event || '—'}</div>
+        <div class="cal-country">${e.country || ''}</div>
+        <div class="cal-time">${time}</div>
+        <div class="cal-vals">
+          ${e.actual != null ? `<span class="cal-act">Real: ${e.actual}${e.unit||''}</span>` : ''}
+          ${e.estimate != null ? `<span class="cal-est">Est: ${e.estimate}${e.unit||''}</span>` : ''}
+          ${e.prev != null ? `<span class="cal-prev">Ant: ${e.prev}${e.unit||''}</span>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderNews(news) {
+  const el = document.getElementById('g-news');
+  if (!news.length) {
+    el.innerHTML = '<div style="color:var(--text3);font-size:11px;padding:8px">A carregar notícias...</div>';
+    return;
+  }
+  el.innerHTML = news.slice(0, 6).map(n => {
+    const time = n.datetime ? new Date(n.datetime * 1000).toLocaleString('pt-PT', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) : '';
+    return `<div class="news-item">
+      <div class="news-src">${n.source || ''} · ${time}</div>
+      <div class="news-ttl"><a href="${n.url||'#'}" target="_blank" rel="noopener">${n.headline||'—'}</a></div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// CHART — Candlestick com Chart.js
+// ═══════════════════════════════════════════════════════
+async function openChart(sym, name, tvSym) {
+  currentChartSym = sym;
+  document.getElementById('chart-title').textContent = name;
+  document.getElementById('chart-meta').textContent = sym;
+  document.getElementById('chart-panel').classList.add('open');
+  document.getElementById('chart-panel').scrollIntoView({ behavior:'smooth', block:'nearest' });
+
+  // Highlight célula
+  document.querySelectorAll('.cell.selected').forEach(el => el.classList.remove('selected'));
+  const cellId = 'cell-' + sym.replace(/[^a-zA-Z0-9]/g, '_');
+  document.getElementById(cellId)?.classList.add('selected');
+
+  await loadCandle(sym, currentRes);
+  loadSignal(sym);
+}
+
+async function loadCandle(sym, resolution) {
+  const resLabel = { '60':'1H', 'D':'1D', 'W':'1W', 'M':'1M' };
+  const days = { '60': 30, 'D': 90, 'W': 365, 'M': 730 };
+
+  document.getElementById('candle-wrap').innerHTML =
+    '<canvas id="candle-chart" role="img" aria-label="Gráfico de candlestick"></canvas>';
+
+  try {
+    const res = await fetch(`${API}?action=candle&symbol=${encodeURIComponent(sym)}&resolution=${resolution}&days=${days[resolution]||90}`);
+    const d = await res.json();
+
+    if (d.status !== 'ok' || !d.c?.length) {
+      document.getElementById('candle-wrap').innerHTML =
+        '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text3);font-size:13px">Sem dados de candle disponíveis</div>';
+      return;
+    }
+
+    drawCandleChart(d, resLabel[resolution] || resolution);
+  } catch(e) {
+    document.getElementById('candle-wrap').innerHTML =
+      `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text3);font-size:13px">Erro: ${e.message}</div>`;
+  }
+}
+
+function drawCandleChart(d, resLabel) {
+  if (candleChart) { candleChart.destroy(); candleChart = null; }
+
+  const canvas = document.getElementById('candle-chart');
+  if (!canvas) return;
+
+  // Calcular cores up/down
+  const upColor   = 'rgba(15,110,86,0.85)';
+  const downColor = 'rgba(163,45,45,0.85)';
+  const upBorder   = '#0F6E56';
+  const downBorder = '#A32D2D';
+
+  const labels = d.t.map(ts => {
+    const date = new Date(ts * 1000);
+    return date.toLocaleDateString('pt-PT', { day:'2-digit', month:'short' });
+  });
+
+  // Dataset de barras para simular candles (Open-Close como floating bar)
+  const barData = d.t.map((_, i) => ({
+    x: labels[i],
+    o: d.o[i],
+    h: d.h[i],
+    l: d.l[i],
+    c: d.c[i],
+  }));
+
+  const upData   = barData.map(b => b.c >= b.o ? [b.o, b.c] : [null, null]);
+  const downData = barData.map(b => b.c < b.o  ? [b.o, b.c] : [null, null]);
+  const wickHigh = barData.map(b => [b.l, b.h]);
+
+  candleChart = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Wick',
+          data: wickHigh,
+          backgroundColor: barData.map(b => b.c >= b.o ? upColor : downColor),
+          borderColor:     barData.map(b => b.c >= b.o ? upBorder : downBorder),
+          borderWidth: 1,
+          barThickness: 1,
+        },
+        {
+          label: 'Alta',
+          data: upData,
+          backgroundColor: upColor,
+          borderColor: upBorder,
+          borderWidth: 1,
+          barThickness: 6,
+        },
+        {
+          label: 'Baixa',
+          data: downData,
+          backgroundColor: downColor,
+          borderColor: downBorder,
+          borderWidth: 1,
+          barThickness: 6,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 300 },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: ctx => ctx[0]?.label || '',
+            label: ctx => {
+              const i = ctx.dataIndex;
+              const b = barData[i];
+              if (!b) return '';
+              const pct = ((b.c - b.o) / b.o * 100).toFixed(2);
+              return [`O: ${b.o?.toFixed(2)}  H: ${b.h?.toFixed(2)}`, `L: ${b.l?.toFixed(2)}  C: ${b.c?.toFixed(2)}`, `Var: ${pct}%`];
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          ticks: { maxTicksLimit: 10, color:'#9C9A94', font:{ size:10 } },
+          grid: { color:'rgba(0,0,0,.06)' },
+        },
+        y: {
+          position: 'right',
+          ticks: { color:'#9C9A94', font:{ size:10 } },
+          grid: { color:'rgba(0,0,0,.06)' },
+        },
+      },
+    },
+  });
+}
+
+async function loadSignal(sym) {
+  const sigEl = document.getElementById('chart-signal');
+  const badgeEl = document.getElementById('sig-badge');
+  const countsEl = document.getElementById('sig-counts');
+  sigEl.style.display = 'flex';
+  badgeEl.textContent = '...';
+  badgeEl.className = 'sig-badge sig-neutral';
+
+  try {
+    const res = await fetch(`${API}?action=signal&symbol=${encodeURIComponent(sym)}&resolution=D`);
+    const d = await res.json();
+    if (!d.signal) { sigEl.style.display = 'none'; return; }
+
+    const sigMap = {
+      'strong_buy': { label:'Compra Forte ▲▲', cls:'sig-buy' },
+      'buy':        { label:'Compra ▲',         cls:'sig-buy' },
+      'neutral':    { label:'Neutro →',          cls:'sig-neutral' },
+      'sell':       { label:'Venda ▼',           cls:'sig-sell' },
+      'strong_sell':{ label:'Venda Forte ▼▼',    cls:'sig-sell' },
+    };
+    const s = sigMap[d.signal] || { label: d.signal, cls:'sig-neutral' };
+    badgeEl.textContent = s.label;
+    badgeEl.className = `sig-badge ${s.cls}`;
+
+    if (d.count) {
+      countsEl.textContent = `Buy:${(d.count.buy||0)+(d.count.strong_buy||0)} · Neutral:${d.count.neutral||0} · Sell:${(d.count.sell||0)+(d.count.strong_sell||0)}`;
+    }
+    if (d.trending != null) {
+      countsEl.textContent += ` · ADX:${d.adx?.toFixed(1)||'—'} (${d.trending?'trending':'lateral'})`;
+    }
+  } catch(e) {
+    sigEl.style.display = 'none';
+  }
+}
+
+function changeRes(res) {
+  currentRes = res;
+  document.querySelectorAll('.res-btn').forEach(b => b.classList.remove('on'));
+  event.target.classList.add('on');
+  if (currentChartSym) loadCandle(currentChartSym, res);
+}
+
+function closeChart() {
+  document.getElementById('chart-panel').classList.remove('open');
+  document.querySelectorAll('.cell.selected').forEach(el => el.classList.remove('selected'));
+  if (candleChart) { candleChart.destroy(); candleChart = null; }
+  currentChartSym = null;
+}
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+render(); // render estático imediato
+fetchAll();
+setInterval(fetchAll, 5 * 60 * 1000);
+</script>
+</body>
+</html>
